@@ -10,7 +10,7 @@ function RootLayout() {
     <>
       <div className="app-shell">
         <header className="topbar">
-          <Link className="brand" to="/">
+          <Link className="brand" search={{}} to="/">
             KikiChoice
           </Link>
         </header>

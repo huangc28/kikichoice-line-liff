@@ -189,9 +189,9 @@
 - [x] 設定 SPA fallback
 
 ### 12.2 M0：參數與安全
-- [ ] 定義 `to` 參數格式與 URL encode 規則
-- [ ] 建立 URL parser 與驗證器（https + allowlist）
-- [ ] 定義錯誤碼與錯誤訊息（缺參數/不合法/不允許）
+- [x] 定義 `to` 參數格式與 URL encode 規則
+- [x] 建立 URL parser 與驗證器（https + allowlist）
+- [x] 定義錯誤碼與錯誤訊息（缺參數/不合法/不允許）
 
 ### 12.3 M1：LIFF 中繼頁
 - [ ] `/` 改為讀取 `to` 的中繼頁

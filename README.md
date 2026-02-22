@@ -29,3 +29,12 @@ npm run preview
 - `CLOUDFLARE_PAGES_PROJECT_NAME`
 
 另外已設定 `public/_redirects`，確保 SPA 深層路由（例如 `/p/demo-product`）在 Pages 正常 fallback 到 `index.html`。
+
+## Relay URL spec (M0)
+
+- Rich Menu URI format:
+  - `https://liff.line.me/{LIFF_ID}?to={urlEncodedMyshipUrl}`
+- `to` must be an `https` URL and pass hostname allowlist validation.
+- Allowlist env:
+  - `VITE_ALLOWED_RELAY_HOSTS=myship.7-11.com.tw`
+  - Multiple hosts use comma-separated values.
