@@ -38,3 +38,5 @@ npm run preview
 - Allowlist env:
   - `VITE_ALLOWED_RELAY_HOSTS=myship.7-11.com.tw`
   - Multiple hosts use comma-separated values.
+- LIFF env:
+  - `VITE_LIFF_ID=2000000000-xxxxxxxx`
