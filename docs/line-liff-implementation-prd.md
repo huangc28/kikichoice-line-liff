@@ -197,3 +197,45 @@ public/
 
 - **建議：另寫一份實作 PRD（就是本檔）**，原始 `line-liff-prd.md` 保持不動。
 - 原始文件管理「做什麼」，本文件管理「怎麼做、何時交付、怎麼驗收」。
+
+---
+
+## 12. TODOs（Progress Tracking）
+
+> 狀態定義：`[ ]` 未開始、`[-]` 進行中、`[x]` 已完成、`[!]` 阻塞
+> 更新規則：每完成一項就勾選，若有阻塞在項目後補一句原因。
+
+### 12.1 M0：骨架與部署打通
+- [ ] 建立 React + Vite + TanStack Router 專案
+- [ ] 建立 Cloudflare Pages 專案與 Git 自動部署
+- [ ] 新增 `public/_redirects` 並確認 SPA fallback 可用
+- [ ] 手機開啟 Pages URL，確認首頁可正常載入
+
+### 12.2 M1：資料串接與列表/詳情
+- [ ] 串接 OpenSheet JSON endpoint（含環境變數設定）
+- [ ] 建立資料正規化與欄位驗證（`ACTIVE` / 必填欄位）
+- [ ] 完成商品列表頁（`/`）
+- [ ] 完成商品詳情頁（`/p/$id`）
+- [ ] 接入 LIFF `liff.init()` 與 `liff.openWindow({ external: true })`
+- [ ] 完成「純連結 + 複製連結」備援
+
+### 12.3 M2：搜尋/排序/標籤與追蹤
+- [ ] 完成搜尋（name / desc / tags）
+- [ ] 完成排序（新品 / 熱賣 / 價格）
+- [ ] 完成 tags 顯示（新品 / 熱賣 / 預購）
+- [ ] 接入事件追蹤：`list_view`、`product_view`、`outbound_click`
+- [ ] 驗證分析平台可看到上述事件
+
+### 12.4 M3：穩定性與上線
+- [ ] 完成 OpenSheet -> gviz CSV fallback 機制
+- [ ] 完成 localStorage 快取（TTL 5 分鐘）
+- [ ] 補齊 loading / error / empty UI
+- [ ] iOS Safari + LINE in-app 實測
+- [ ] Android Chrome + LINE in-app 實測
+- [ ] 完成 production 部署與 LIFF endpoint 綁定
+
+### 12.5 驗收與交付
+- [ ] UAT 功能驗收全數通過
+- [ ] 相容性驗收全數通過
+- [ ] 數據驗收全數通過
+- [ ] 更新本檔版本號與日期
