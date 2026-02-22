@@ -1,6 +1,6 @@
 # kikichoice-line-liff
 
-LINE LIFF 商品清單 SPA（TanStack Router + Vite），部署目標為 Cloudflare Pages。test
+LINE LIFF 商品清單 SPA（TanStack Router + Vite），部署目標為 Cloudflare Pages。
 
 ## Local development
 
