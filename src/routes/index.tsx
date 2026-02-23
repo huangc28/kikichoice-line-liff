@@ -233,22 +233,38 @@ function HomePage() {
 
   return (
     <section className="relay-shell">
-      <article className="relay-card">
-        <p className="relay-eyebrow">KikiChoice Checkout</p>
-        <h1>準備前往下單</h1>
-        <p className="relay-instruction">{instruction}</p>
-        <div aria-live="polite" className={`relay-status ${statusClass}`}>
+      <article aria-labelledby="relay-title" className="relay-card">
+        <header className="relay-head">
+          <p className="relay-eyebrow">
+            <span aria-hidden="true" className="relay-eyebrow-dot" />
+            KikiChoice Checkout
+          </p>
+          <p aria-label="流程 1 / 1" className="relay-step">
+            Step 1 / 1
+          </p>
+        </header>
+        <h1 id="relay-title">準備前往下單</h1>
+        <p className="relay-instruction" id="relay-instruction">
+          {instruction}
+        </p>
+        <div aria-live="polite" className={`relay-status ${statusClass}`} role="status">
           <p className="relay-status-title">{statusTitle}</p>
-          <p>{statusHint}</p>
+          <p id="relay-status-hint">{statusHint}</p>
         </div>
         <div className="relay-actions">
-          <button className="relay-primary button-reset" disabled={!canOpen} onClick={handleOpenRelay} type="button">
+          <button
+            aria-describedby="relay-instruction relay-status-hint"
+            className="relay-primary button-reset"
+            disabled={!canOpen}
+            onClick={handleOpenRelay}
+            type="button"
+          >
             開啟下單頁
           </button>
         </div>
         {showAssist ? (
-          <div className="relay-assist" role="group">
-            <p>若沒有自動開啟：</p>
+          <div aria-label="備援操作" className="relay-assist" role="group">
+            <p>若未自動開啟，可先複製連結：</p>
             <div className="relay-assist-actions">
               <button className="relay-secondary button-reset" onClick={handleCopyLink} type="button">
                 複製連結
@@ -261,7 +277,7 @@ function HomePage() {
             </div>
             {targetUrl ? (
               <p className="relay-manual-link">
-                手動開啟：<a href={targetUrl}>前往下單頁</a>
+                手動開啟：<a href={targetUrl} rel="noopener noreferrer" target="_blank">前往下單頁</a>
               </p>
             ) : null}
           </div>

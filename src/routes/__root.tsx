@@ -7,12 +7,15 @@ export const Route = createRootRoute({
 function RootLayout() {
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        跳到主要內容
+      </a>
       <header className="topbar">
         <Link className="brand" search={{}} to="/">
           KikiChoice
         </Link>
       </header>
-      <main className="content">
+      <main className="content" id="main-content">
         <Outlet />
       </main>
     </div>
