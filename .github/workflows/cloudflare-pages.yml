@@ -25,6 +25,9 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          VITE_LIFF_ID: ${{ vars.VITE_LIFF_ID }}
+          VITE_ALLOWED_RELAY_HOSTS: ${{ vars.VITE_ALLOWED_RELAY_HOSTS }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
