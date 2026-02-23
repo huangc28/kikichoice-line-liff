@@ -1,9 +1,9 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { RelayLiffClient } from '../lib/liff/client'
 import { getLiffIdFromEnv, initRelayLiff, openExternalWithLiff } from '../lib/liff/client'
-import { encodeRelayTarget, getAllowedRelayHostsFromEnv, validateRelayTarget } from '../lib/security/relay-url'
+import { getAllowedRelayHostsFromEnv, validateRelayTarget } from '../lib/security/relay-url'
 
 type RelaySearch = {
   to?: string
@@ -11,7 +11,11 @@ type RelaySearch = {
 
 type LiffState = {
   mode: 'initializing' | 'ready' | 'fallback'
-  message: string
+}
+
+type InlineNotice = {
+  tone: 'success' | 'error'
+  text: string
 }
 
 export const Route = createFileRoute('/')({
@@ -37,23 +41,38 @@ function HomePage() {
   const { to } = Route.useSearch()
   const allowedHosts = useMemo(() => getAllowedRelayHostsFromEnv(), [])
   const validation = validateRelayTarget(to, allowedHosts)
-  const exampleTarget = 'https://myship.7-11.com.tw/general/detail/GM1234567890'
-  const exampleRelayUrl = `https://liff.line.me/{LIFF_ID}?to=${encodeRelayTarget(exampleTarget)}`
   const liffRef = useRef<RelayLiffClient | null>(null)
+  const requestIdRef = useRef<string>(createRequestId())
+  const initialToRef = useRef<string | undefined>(to)
   const [liffState, setLiffState] = useState<LiffState>({
     mode: 'initializing',
-    message: '正在初始化 LIFF...',
   })
   const [openError, setOpenError] = useState<string | null>(null)
-  const [copyMessage, setCopyMessage] = useState<string | null>(null)
+  const [copyNotice, setCopyNotice] = useState<InlineNotice | null>(null)
+  const validationOk = validation.ok
+  const validationHostname = validation.ok ? validation.hostname : undefined
+  const validationCode = validation.ok ? undefined : validation.code
 
-  const canOpen = validation.ok
+  function logRelayEvent(event: string, payload: Record<string, unknown> = {}) {
+    console.info('[relay]', event, {
+      requestId: requestIdRef.current,
+      ...payload,
+    })
+  }
 
   useEffect(() => {
-    if (!validation.ok) {
+    logRelayEvent('page_opened', {
+      hasToParam: typeof initialToRef.current === 'string' && initialToRef.current.length > 0,
+    })
+  }, [])
+
+  useEffect(() => {
+    logRelayEvent('validation_result', validationOk ? { ok: true, hostname: validationHostname } : { ok: false, code: validationCode })
+
+    if (!validationOk) {
+      liffRef.current = null
       setLiffState({
         mode: 'fallback',
-        message: '參數驗證失敗，請改用下方連結手動開啟。',
       })
       return
     }
@@ -61,17 +80,21 @@ function HomePage() {
     const liffId = getLiffIdFromEnv()
 
     if (!liffId) {
+      liffRef.current = null
+      logRelayEvent('liff_init_result', {
+        ok: false,
+        reason: 'LIFF_ID_MISSING',
+      })
       setLiffState({
         mode: 'fallback',
-        message: '未設定 VITE_LIFF_ID，將改用一般瀏覽器開啟。',
       })
       return
     }
 
     let cancelled = false
+    liffRef.current = null
     setLiffState({
       mode: 'initializing',
-      message: '正在初始化 LIFF...',
     })
 
     void (async () => {
@@ -83,28 +106,54 @@ function HomePage() {
 
       if (!result.ok) {
         liffRef.current = null
+        logRelayEvent('liff_init_result', {
+          ok: false,
+          reason: result.message,
+        })
         setLiffState({
           mode: 'fallback',
-          message: result.message,
         })
         return
       }
 
       liffRef.current = result.liff
+      logRelayEvent('liff_init_result', {
+        ok: true,
+        isInClient: result.isInClient,
+      })
       setLiffState({
         mode: 'ready',
-        message: result.isInClient
-          ? 'LIFF 初始化成功，可用外部瀏覽器開啟。'
-          : '目前不在 LINE 內，但仍可嘗試外開。',
       })
     })()
 
     return () => {
       cancelled = true
     }
-  }, [validation.ok])
+  }, [validationOk, validationHostname, validationCode])
 
   const targetUrl = validation.ok ? validation.targetUrl : null
+  const targetHostname = validationHostname
+  const isInvalidLink = !validationOk
+  const canOpen = Boolean(targetUrl) && liffState.mode !== 'initializing'
+  const showAssist = Boolean(targetUrl) && !isInvalidLink && liffState.mode !== 'initializing'
+  const shouldShowRetry = Boolean(openError) && canOpen
+
+  const instruction = isInvalidLink ? '連結已失效，請回到 LINE 重新點一次。' : '請點下方按鈕，使用 Safari 或 Chrome 繼續下單。'
+  const statusTitle = isInvalidLink
+    ? '目前無法開啟連結'
+    : liffState.mode === 'initializing'
+      ? '正在準備開啟頁面…'
+      : openError
+        ? '沒有成功開啟'
+        : '已準備完成'
+  const statusHint = isInvalidLink
+    ? '請從 LINE 聊天視窗重新進入。'
+    : liffState.mode === 'initializing'
+      ? '請稍候 1 到 2 秒。'
+      : openError
+        ? '請改用複製連結到 Safari/Chrome。'
+        : '點一下即可前往下單頁。'
+  const statusClass = isInvalidLink || openError ? 'error' : 'success'
 
   async function handleOpenRelay() {
     if (!targetUrl) {
@@ -112,10 +161,19 @@ function HomePage() {
     }
 
     setOpenError(null)
+    setCopyNotice(null)
+    logRelayEvent('open_clicked', {
+      hostname: targetHostname,
+      source: liffRef.current ? 'liff' : 'window_open',
+    })
 
     try {
       if (liffRef.current) {
         await openExternalWithLiff(liffRef.current, targetUrl)
+        logRelayEvent('open_succeeded', {
+          hostname: targetHostname,
+          source: 'liff',
+        })
         return
       }
 
@@ -124,8 +182,16 @@ function HomePage() {
       if (!opened) {
         throw new Error('BROWSER_POPUP_BLOCKED')
       }
+
+      logRelayEvent('open_succeeded', {
+        hostname: targetHostname,
+        source: 'window_open',
+      })
     } catch {
-      setOpenError('外開失敗，請使用下方純連結或複製連結後在 Safari/Chrome 開啟。')
+      logRelayEvent('open_failed', {
+        hostname: targetHostname,
+      })
+      setOpenError('沒有成功開啟，請先複製連結再到 Safari/Chrome 開啟。')
     }
   }
 
@@ -134,7 +200,10 @@ function HomePage() {
       return
     }
 
-    setCopyMessage(null)
+    setCopyNotice(null)
+    logRelayEvent('copy_link_clicked', {
+      hostname: targetHostname,
+    })
 
     try {
       if (navigator.clipboard?.writeText) {
@@ -147,73 +216,78 @@ function HomePage() {
         }
       }
 
-      setCopyMessage('連結已複製。')
+      setCopyNotice({
+        tone: 'success',
+        text: '連結已複製。',
+      })
     } catch {
-      setCopyMessage('無法自動複製，請長按下方連結手動複製。')
+      logRelayEvent('copy_link_failed', {
+        hostname: targetHostname,
+      })
+      setCopyNotice({
+        tone: 'error',
+        text: '無法自動複製，請直接點下方連結後用 Safari/Chrome 開啟。',
+      })
     }
   }
 
   return (
-    <section className="panel">
-      <p className="eyebrow">LIFF Relay</p>
-      <h1>即將開啟賣貨便下單</h1>
-      <p>為避免 LINE 內建瀏覽器登入失敗，建議用 Safari/Chrome 開啟。</p>
-      {validation.ok ? (
-        <div className="status success">
-          <strong>驗證結果：通過</strong>
-          <p>連結可用，已通過 https 與白名單檢查。</p>
-          <p>
-            host: <code>{validation.hostname}</code>
+    <section className="relay-shell">
+      <article className="relay-card">
+        <p className="relay-eyebrow">KikiChoice Checkout</p>
+        <h1>準備前往下單</h1>
+        <p className="relay-instruction">{instruction}</p>
+        <div aria-live="polite" className={`relay-status ${statusClass}`}>
+          <p className="relay-status-title">{statusTitle}</p>
+          <p>{statusHint}</p>
+        </div>
+        <div className="relay-actions">
+          <button className="relay-primary button-reset" disabled={!canOpen} onClick={handleOpenRelay} type="button">
+            開啟 Safari/Chrome
+          </button>
+        </div>
+        {showAssist ? (
+          <div className="relay-assist" role="group">
+            <p>若沒有自動開啟：</p>
+            <div className="relay-assist-actions">
+              <button className="relay-secondary button-reset" onClick={handleCopyLink} type="button">
+                複製連結
+              </button>
+              {shouldShowRetry ? (
+                <button className="relay-link button-reset" onClick={handleOpenRelay} type="button">
+                  重新嘗試
+                </button>
+              ) : null}
+            </div>
+            {targetUrl ? (
+              <p className="relay-manual-link">
+                手動開啟：<a href={targetUrl}>前往下單頁</a>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {openError ? (
+          <p aria-live="polite" className="relay-inline-error">
+            {openError}
           </p>
-        </div>
-      ) : (
-        <div className="status error">
-          <strong>驗證結果：失敗</strong>
-          <p>
-            [{validation.code}] {validation.message}
+        ) : null}
+        {copyNotice ? (
+          <p aria-live="polite" className={`relay-inline-message ${copyNotice.tone}`}>
+            {copyNotice.text}
           </p>
-        </div>
-      )}
-      <div className={`status ${liffState.mode === 'ready' ? 'success' : 'error'}`}>
-        <strong>LIFF 狀態</strong>
-        <p>{liffState.message}</p>
-      </div>
-      {openError ? (
-        <div className="status error">
-          <strong>外開失敗</strong>
-          <p>{openError}</p>
-        </div>
-      ) : null}
-      {copyMessage ? (
-        <div className="status success">
-          <strong>複製狀態</strong>
-          <p>{copyMessage}</p>
-        </div>
-      ) : null}
-      <p>
-        允許網域：<code>{allowedHosts.join(', ')}</code>
-      </p>
-      {targetUrl ? (
-        <p>
-          目標連結：<a href={targetUrl}>{targetUrl}</a>
-        </p>
-      ) : null}
-      <p>
-        範例 URI：<code>{exampleRelayUrl}</code>
-      </p>
-      <div className="actions">
-        <button className="button button-reset" disabled={!canOpen} onClick={handleOpenRelay} type="button">
-          開啟賣貨便（外部瀏覽器）
-        </button>
-        <button className="button secondary button-reset" disabled={!canOpen} onClick={handleCopyLink} type="button">
-          複製連結
-        </button>
-        <Link className="button" params={{ id: 'demo-product' }} to="/p/$id">
-          前往測試頁
-        </Link>
-      </div>
+        ) : null}
+        <p className="relay-footnote">開啟後可返回 LINE 繼續查看訊息。</p>
+      </article>
     </section>
   )
+}
+
+function createRequestId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return `relay-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function copyByExecCommand(text: string): boolean {
