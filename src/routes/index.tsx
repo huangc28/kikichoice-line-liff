@@ -243,7 +243,7 @@ function HomePage() {
         </div>
         <div className="relay-actions">
           <button className="relay-primary button-reset" disabled={!canOpen} onClick={handleOpenRelay} type="button">
-            開啟 Safari/Chrome
+            開啟下單頁
           </button>
         </div>
         {showAssist ? (
