@@ -20,6 +20,14 @@ export const Route = createFileRoute('/')({
       return { to: search.to }
     }
 
+    if (typeof search['liff.state'] === 'string') {
+      const toFromLiffState = extractToFromLiffState(search['liff.state'])
+
+      if (toFromLiffState) {
+        return { to: toFromLiffState }
+      }
+    }
+
     return {}
   },
   component: HomePage,
@@ -229,4 +237,26 @@ function copyByExecCommand(text: string): boolean {
   }
 
   return copied
+}
+
+function extractToFromLiffState(liffState: string): string | undefined {
+  const candidates = [liffState]
+
+  try {
+    candidates.push(decodeURIComponent(liffState))
+  } catch {
+    // ignore decode failure and continue with original value
+  }
+
+  for (const candidate of candidates) {
+    const normalized = candidate.startsWith('?') ? candidate.slice(1) : candidate
+    const nestedSearch = new URLSearchParams(normalized)
+    const to = nestedSearch.get('to')
+
+    if (to && to.trim().length > 0) {
+      return to
+    }
+  }
+
+  return undefined
 }
