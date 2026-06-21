@@ -51,3 +51,19 @@ npm run pages:deploy   # 手動部署到 Cloudflare Pages
 
 - [ ] LIFF ID 與 API base 等環境變數清單(VITE_*)
 - [ ] 後端 API 串接的進入點(`src/lib` 下哪支)
+
+## Agent skills
+
+> Configures Matt Pocock's engineering skills (to-issues, triage, to-prd, diagnose, tdd, improve-codebase-architecture, zoom-out) for this repo. Edit `docs/agents/*.md` to adjust.
+
+### Issue tracker
+
+Issues live as GitHub issues for this repo (use the `gh` CLI, inferred from `git remote`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles; label strings equal their names (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
